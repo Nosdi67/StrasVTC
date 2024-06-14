@@ -2,26 +2,30 @@
 
 namespace App\HttpClient;
 
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\bundle\FrameworkBundle\Controller\AbstractController;
 
-class ApiHttpClient extends AbstractController
+class ApiHttpClient
 {
     private $httpClient;
 
-    public function __construct(HttpClientInterface $jph)
+    public function __construct(HttpClientInterface $httpClient)
     {
-        $this->httpClient= $jph;
-        
+        $this->httpClient = $httpClient;
     }
+    
 
-    public function getAdresses(){
-
-        $response= $this->httpClient->request('GET',"?results=5",[
-            'verify_peer'=>false,
+    public function search(string $query): array
+    {
+        $response = $this->httpClient->request('GET', 'search', [
+            'query' => [
+                'q' => $query,
+                'format' => 'json',
+                'limit' => 5,
+            ]
         ]);
+
         return $response->toArray();
     }
 }
+
+?>
