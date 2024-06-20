@@ -1,49 +1,127 @@
-// Écouteur d'événement pour le chargement du contenu du document
 document.addEventListener('DOMContentLoaded', (event) => {
-    // Initialisation de la carte avec une vue centrée sur les coordonnées spécifiées
-    var map = L.map('map').setView([51.505, -0.09], 13);
+    // Initialisation de la carte centrée sur Paris
+    var map = L.map('map').setView([48.8566, 2.3522], 16);
 
-    // Ajout d'une couche de tuiles OpenStreetMap à la carte
+    // Ajout des tuiles OpenStreetMap à la carte
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
-    // Récupération des éléments de l'interface utilisateur pour les entrées de départ et de destination
-    let departureInput = document.getElementById('departure');
-    let arrivalInput = document.getElementById('destination');
-    let suggestionsList = document.getElementById('departure-suggestions');
+    // Déclaration des variables pour les marqueurs de départ et de destination
+    let departureMarker, destinationMarker;
+    let routingControl; // Variable pour garder une référence au contrôle de l'itinéraire
 
-    // Ajout d'un écouteur d'événement pour l'entrée de départ
+    // Récupération des éléments d'interface pour les entrées de texte et les suggestions
+    let departureInput = document.getElementById('departure');
+    let destinationInput = document.getElementById('destination');
+    let departureSuggestionsList = document.getElementById('departure-suggestions');
+    let destinationSuggestionsList = document.getElementById('destination-suggestions');
+
+
+    // Ajouter des écouteurs pour les changements de valeur
+    departureInput.addEventListener('change', () => handleMarkerRemoval(departureInput, 'departure'));
+    destinationInput.addEventListener('change', () => handleMarkerRemoval(destinationInput, 'destination'));
+
+    function handleMarkerRemoval(inputElement, type) {
+        if (inputElement.value.trim() === '') {
+            if (type === 'departure' && departureMarker) {
+                map.removeLayer(departureMarker);
+                departureMarker = null;
+            } else if (type === 'destination' && destinationMarker) {
+                map.removeLayer(destinationMarker);
+                destinationMarker = null;
+            }
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+        }
+    }
+
+    // Fonction pour ajouter des suggestions dans la liste
+    function addSuggestions(inputElement, suggestionsElement, data, isDeparture) {
+        // Vider les suggestions précédentes
+        suggestionsElement.innerHTML = '';
+        // Ajouter les nouvelles suggestions
+        data.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item.display_name;
+            li.addEventListener('click', function() {
+                inputElement.value = item.display_name;
+                suggestionsElement.innerHTML = ''; // Effacer les suggestions
+
+                // Ajouter un marqueur à la carte
+                const latLng = [item.lat, item.lon];
+                if (isDeparture) {
+                    if (departureMarker) map.removeLayer(departureMarker);
+                    departureMarker = L.marker(latLng).addTo(map);
+                    map.flyTo(latLng, 15); // Centrer la carte sur le nouveau marqueur
+                } else {
+                    if (destinationMarker) map.removeLayer(destinationMarker);
+                    destinationMarker = L.marker(latLng).addTo(map);
+                }
+
+                // Calculer l'itinéraire si les deux marqueurs sont définis
+                if (departureMarker && destinationMarker) {
+                    calculateRoute(departureMarker.getLatLng(), destinationMarker.getLatLng());
+                }
+            });
+            suggestionsElement.appendChild(li);
+        });
+    }
+
+    // Écouteurs d'événements pour les entrées de texte de départ et de destination
     departureInput.addEventListener('input', function() {
-        const query = departureInput.value;
-        // Vérification que la requête a plus de 2 caractères
+        handleInput(this, departureSuggestionsList, true);
+    });
+
+    destinationInput.addEventListener('input', function() {
+        handleInput(this, destinationSuggestionsList, false);
+    });
+
+    // Fonction pour gérer les entrées de texte et afficher les suggestions
+    function handleInput(inputElement, suggestionsElement, isDeparture) {
+        const query = inputElement.value;
         if (query.length > 2) {
-            // Effectuer une requête à l'API Nominatim pour rechercher des emplacements
             fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json`)
                 .then(response => response.json())
                 .then(data => {
-                    // Réinitialiser la liste de suggestions
-                    suggestionsList.innerHTML = '';
-                    // Parcourir les résultats de la recherche et ajouter des options à la liste de suggestions
-                    data.forEach(item => {
-                        const option = document.createElement('option');
-                        option.textContent = item.display_name;
-                        // Ajouter un écouteur d'événement pour chaque option de suggestion
-                        option.addEventListener('click', function() {
-                            departureInput.value = item.display_name;
-                            suggestionsList.innerHTML = ''; // Effacer la liste de suggestions
-                        });
-                        // Ajouter l'option à la liste de suggestions
-                        suggestionsList.appendChild(option);
-                    });
+                    addSuggestions(inputElement, suggestionsElement, data, isDeparture);
                 });
         }
-    });
-});
+    }
 
-// Fonction pour ajouter un marqueur à la carte
-function addMarker(lat, lon) {
-    var marker = L.marker([lat, lon]).addTo(map);
-    map.setView([lat, lon], 13); // Ajuster la vue de la carte au nouveau marqueur
-}
+    // Fonction pour calculer et afficher l'itinéraire
+    function calculateRoute(start, end) {
+        if (routingControl) {
+            map.removeControl(routingControl); // Supprimez l'ancien contrôle de l'itinéraire
+        }
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(start),
+                L.latLng(end)
+            ],
+            routeWhileDragging: true,
+            createMarker: function() { return null; } // Désactiver les marqueurs par défaut
+        }).on('routesfound', function(e) {
+            var routes = e.routes;
+            var summary = routes[0].summary;
+
+            // Convertir le temps total de secondes en heures et minutes
+            var totalTime = summary.totalTime;
+            var hours = Math.floor(totalTime / 3600);
+            var minutes = Math.floor((totalTime % 3600) / 60);
+
+            // Mettre à jour l'élément des étapes de l'itinéraire avec la distance et le temps formatés
+            document.getElementById('itinerary-steps').innerHTML = `
+                <div>Distance : ${(summary.totalDistance / 1000).toFixed(1)} km</div>
+                <div>Temps de trajet estimé : ${hours} heures et ${minutes} minutes</div>
+            `;
+
+            // Ajuster la carte pour afficher les deux marqueurs avec une marge
+            var group = L.featureGroup([departureMarker, destinationMarker]);
+            map.fitBounds(group.getBounds(), { padding: [50, 50] }); // Ajuster la marge si nécessaire
+        }).addTo(map);
+    }
+});
