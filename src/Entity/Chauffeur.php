@@ -52,6 +52,9 @@ class Chauffeur
     #[ORM\OneToMany(targetEntity: Course::class, mappedBy: 'chauffeur')]
     private Collection $courses;
 
+    #[ORM\Column(length: 255)]
+    private ?string $image = null;
+
     public function __construct()
     {
         $this->avis = new ArrayCollection();
@@ -222,6 +225,18 @@ class Chauffeur
                 $course->setChauffeur(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getImage(): ?string
+    {
+        return $this->image;
+    }
+
+    public function setImage(string $image): static
+    {
+        $this->image = $image;
 
         return $this;
     }

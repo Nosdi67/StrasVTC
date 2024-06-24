@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }).addTo(map);
 
     // Déclaration des variables pour les marqueurs de départ et de destination
-    let departureMarker, destinationMarker;
+    let departureMarker;
+    let destinationMarker;
     let routingControl; // Variable pour garder une référence au contrôle de l'itinéraire
 
     // Récupération des éléments d'interface pour les entrées de texte et les suggestions
@@ -20,10 +21,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 
     // Ajouter des écouteurs pour les changements de valeur
-    departureInput.addEventListener('change', () => handleMarkerRemoval(departureInput, 'departure'));
-    destinationInput.addEventListener('change', () => handleMarkerRemoval(destinationInput, 'destination'));
+    departureInput.addEventListener('change', () => handleMarkerRemoval(departureInput, 'departure'));// enlever le marqueur si la valeur est vide
+    destinationInput.addEventListener('change', () => handleMarkerRemoval(destinationInput, 'destination'));//
 
     function handleMarkerRemoval(inputElement, type) {
+        //trim => permet de supprimer les espaces avant et après la valeur
         if (inputElement.value.trim() === '') {
             if (type === 'departure' && departureMarker) {
                 map.removeLayer(departureMarker);
@@ -32,7 +34,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 map.removeLayer(destinationMarker);
                 destinationMarker = null;
             }
-            if (routingControl) {
+            if (routingControl) {// Si le contrôle d'itinéraire existe
                 map.removeControl(routingControl);
                 routingControl = null;
             }
@@ -114,14 +116,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
             var minutes = Math.floor((totalTime % 3600) / 60);
 
             // Mettre à jour l'élément des étapes de l'itinéraire avec la distance et le temps formatés
+            //toFixed(nb de chiffres apres la vergule)
             document.getElementById('itinerary-steps').innerHTML = `
-                <div>Distance : ${(summary.totalDistance / 1000).toFixed(1)} km</div>
+                <div>Distance : ${(summary.totalDistance / 1000).toFixed(1)} km</div> 
                 <div>Temps de trajet estimé : ${hours} heures et ${minutes} minutes</div>
             `;
 
             // Ajuster la carte pour afficher les deux marqueurs avec une marge
             var group = L.featureGroup([departureMarker, destinationMarker]);
-            map.fitBounds(group.getBounds(), { padding: [50, 50] }); // Ajuster la marge si nécessaire
+            map.fitBounds(group.getBounds(), { padding: [50, 50] }); 
         }).addTo(map);
     }
+    let tarifTest = 0.5;
+    let calculatedValue = ((summary.totalDistance / 1000) * tarifTest).toFixed(1);
+    console.log(calculatedValue);  // Vérifiez cette sortie dans la console du navigateur
+    document.getElementById('chauffeurCard_btn').innerHTML = `<a href=''>${calculatedValue}</a>`;
+    
 });
