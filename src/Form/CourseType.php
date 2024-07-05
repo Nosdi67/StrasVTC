@@ -18,8 +18,12 @@ class CourseType extends AbstractType
             ->add('dateDepart', null, [
                 'widget' => 'single_text',
             ])
-            ->add('adresseDepart')
-            ->add('adresseArrivee')
+            ->add('adresseDepart',null,[
+                'label' => 'Adresse de départ',
+            ])
+            ->add('adresseArrivee',null,[
+                'label'=> "Adresse d'arrivé"
+            ])
             ->add('prix')
             ->add('nbPassagers')
             ->add('devis')

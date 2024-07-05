@@ -53,6 +53,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 inputElement.value = item.display_name;
                 suggestionsElement.innerHTML = ''; // Effacer les suggestions
 
+
+                if (isDeparture) {//stocker les adresses ici
+                    document.getElementById('selected-departure-address').value = item.display_name;
+                } else {
+                    document.getElementById('selected-destination-address').value = item.display_name;
+                }
+            
                 // Ajouter un marqueur à la carte
                 const latLng = [item.lat, item.lon];
                 if (isDeparture) {
@@ -106,30 +113,60 @@ document.addEventListener('DOMContentLoaded', (event) => {
             ],
             routeWhileDragging: true,
             createMarker: function() { return null; } // Désactiver les marqueurs par défaut
-        }).on('routesfound', function(e) {
-            var routes = e.routes;
-            var summary = routes[0].summary;
+        }).on('routesfound', function(f) {
+            var routes = f.routes;// Récupérez les itinéraires
+            if (routes.length > 0) {
+            var summary = routes[0].summary;// Récupérez la sommaire de l'itinéraire
 
             // Convertir le temps total de secondes en heures et minutes
             var totalTime = summary.totalTime;
             var hours = Math.floor(totalTime / 3600);
             var minutes = Math.floor((totalTime % 3600) / 60);
 
+            let tarifTest = 0.5;
+
             // Mettre à jour l'élément des étapes de l'itinéraire avec la distance et le temps formatés
             //toFixed(nb de chiffres apres la vergule)
             document.getElementById('itinerary-steps').innerHTML = `
                 <div>Distance : ${(summary.totalDistance / 1000).toFixed(1)} km</div> 
                 <div>Temps de trajet estimé : ${hours} heures et ${minutes} minutes</div>
+                <div>Tarif : ${(summary.totalDistance / 1000).toFixed(1) * tarifTest} €</div>
             `;
 
             // Ajuster la carte pour afficher les deux marqueurs avec une marge
             var group = L.featureGroup([departureMarker, destinationMarker]);
             map.fitBounds(group.getBounds(), { padding: [50, 50] }); 
+        } else {
+            console.log('No routes found');
+        }
         }).addTo(map);
     }
-    let tarifTest = 0.5;
-    let calculatedValue = ((summary.totalDistance / 1000) * tarifTest).toFixed(1);
-    console.log(calculatedValue);  // Vérifiez cette sortie dans la console du navigateur
-    document.getElementById('chauffeurCard_btn').innerHTML = `<a href=''>${calculatedValue}</a>`;
+    
+
+    //*********************************/
+    function sendAdresses() {
+        const departureAddress = document.getElementById('selected-departure-address').value;
+        const destinationAddress = document.getElementById('selected-destination-address').value;
+        
+    
+        // Envoyer une requête AJAX au serveur
+        fetch('/StrasVTC/getAdresses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ departureAddress, destinationAddress })// Ajouter les adresses de départ et de destination
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Gérer la réponse du serveur ici
+            console.log(data);
+        })
+        .catch(error => {
+            console.error('Erreur :', error);
+        });
+    }
+    //window pour s'assurer que la fonction est appelée après la page est chargée
+    window.sendAdresses = sendAdresses;   
     
 });

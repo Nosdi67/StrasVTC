@@ -8,7 +8,7 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin=""/>
         <style>
-            .leaflet-routing-container {
+            .leaflet-routing-container {/*Container pour le detail d'itineraire*/
                 display: none !important;
             }
         </style>
@@ -22,12 +22,20 @@
         crossorigin=""></script>
         <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
         <script src="{{ asset('script.js') }}"></script>
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
+            {% block importmap %}{{ importmap('app') }}{% endblock %} {# Import de la map #}
         {% endblock %}
     </head>
+    
     <body>
-        {% block body %}
-        
-        {% endblock %}
+        <div id="nav_div">
+            <nav>
+                <ul>
+                    <li><a href=" {{path('app_home')}} ">Home</a></li>
+                </ul>
+            </nav>
+        </div>
     </body>
+        {% block body %}
+
+        {% endblock  %}
 </html>

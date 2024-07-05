@@ -1,0 +1,25 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello CourseController!{% endblock %}
+
+{% block body %}
+
+
+<div class="example-wrapper">
+    <h1>Hello {{ controller_name }}! ✅</h1>
+</div>
+
+
+<div>
+    <label>Adresse de départ :</label>
+    <span>{{ departureAddress ?? 'Aucune adresse de départ' }}</span>
+</div>
+
+<div>
+    <label>Adresse d'arrivée :</label>
+    <span>{{ destinationAddress ?? 'Aucune adresse d\'arrivée' }}</span>
+</div>
+
+
+
+{% endblock %}
